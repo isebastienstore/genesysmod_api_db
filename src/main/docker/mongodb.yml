@@ -1,5 +1,4 @@
 # This configuration is intended for development purpose, it's **your** responsibility to harden it for production
-name: genesysmodapidb
 services:
   mongodb:
     image: mongo:8.0.9

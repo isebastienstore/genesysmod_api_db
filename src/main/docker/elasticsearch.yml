@@ -1,5 +1,4 @@
 # This configuration is intended for development purpose, it's **your** responsibility to harden it for production
-name: genesysmodapidb
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
