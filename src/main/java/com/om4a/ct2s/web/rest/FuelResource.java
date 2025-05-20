@@ -166,6 +166,13 @@ public class FuelResource {
         return ResponseUtil.wrapOrNotFound(fuel);
     }
 
+    @GetMapping("/name/{name}")
+    public ResponseEntity<Fuel> getFuelByName(@PathVariable("name") String name) {
+        LOG.debug("REST request to get Fuel by name : {}", name);
+        Optional<Fuel> fuel = fuelRepository.findByName(name);
+        return ResponseUtil.wrapOrNotFound(fuel);
+    }
+
     /**
      * {@code DELETE  /fuels/:id} : delete the "id" fuel.
      *

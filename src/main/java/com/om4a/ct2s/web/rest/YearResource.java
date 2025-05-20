@@ -166,6 +166,13 @@ public class YearResource {
         return ResponseUtil.wrapOrNotFound(year);
     }
 
+    @GetMapping("/year/{year_value}")
+    public ResponseEntity<Year> getYearByYear(@PathVariable("year_value") String year_value) {
+        LOG.debug("REST request to get Year by Year: {}", year_value);
+        Optional<Year> year = yearRepository.findByYear(year_value);
+        return ResponseUtil.wrapOrNotFound(year);
+    }
+
     /**
      * {@code DELETE  /years/:id} : delete the "id" year.
      *

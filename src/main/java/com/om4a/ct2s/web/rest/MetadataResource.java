@@ -133,8 +133,11 @@ public class MetadataResource {
                 if (metadata.getUpdatedBy() != null) {
                     existingMetadata.setUpdatedBy(metadata.getUpdatedBy());
                 }
-                if (metadata.getAction() != null) {
-                    existingMetadata.setAction(metadata.getAction());
+                if (metadata.getLastAccessAt() != null) {
+                    existingMetadata.setLastAccessAt(metadata.getLastAccessAt());
+                }
+                if (metadata.getLastAccessBy() != null) {
+                    existingMetadata.setLastAccessBy(metadata.getLastAccessBy());
                 }
                 if (metadata.getCreatedAt() != null) {
                     existingMetadata.setCreatedAt(metadata.getCreatedAt());

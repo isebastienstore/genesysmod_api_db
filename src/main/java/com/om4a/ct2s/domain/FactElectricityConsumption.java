@@ -25,14 +25,17 @@ public class FactElectricityConsumption implements Serializable {
     private Double value;
 
     @DBRef
+    @NotNull
     @Field("year")
     private Year year;
 
     @DBRef
+    @NotNull
     @Field("country")
     private Country country;
 
     @DBRef
+    @NotNull
     @Field("metadata")
     private Metadata metadata;
 

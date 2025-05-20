@@ -5,11 +5,11 @@ import java.util.UUID;
 public class MetadataTestSamples {
 
     public static Metadata getMetadataSample1() {
-        return new Metadata().id("id1").createdBy("createdBy1").updatedBy("updatedBy1").action("action1").source("source1");
+        return new Metadata().id("id1").createdBy("createdBy1").updatedBy("updatedBy1").source("source1");
     }
 
     public static Metadata getMetadataSample2() {
-        return new Metadata().id("id2").createdBy("createdBy2").updatedBy("updatedBy2").action("action2").source("source2");
+        return new Metadata().id("id2").createdBy("createdBy2").updatedBy("updatedBy2").source("source2");
     }
 
     public static Metadata getMetadataRandomSampleGenerator() {
@@ -17,7 +17,6 @@ public class MetadataTestSamples {
             .id(UUID.randomUUID().toString())
             .createdBy(UUID.randomUUID().toString())
             .updatedBy(UUID.randomUUID().toString())
-            .action(UUID.randomUUID().toString())
             .source(UUID.randomUUID().toString());
     }
 }

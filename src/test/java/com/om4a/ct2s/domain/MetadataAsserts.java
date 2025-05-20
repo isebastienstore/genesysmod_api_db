@@ -50,7 +50,6 @@ public class MetadataAsserts {
             .as("Verify Metadata relevant properties")
             .satisfies(a -> assertThat(a.getCreatedBy()).as("check createdBy").isEqualTo(expected.getCreatedBy()))
             .satisfies(a -> assertThat(a.getUpdatedBy()).as("check updatedBy").isEqualTo(expected.getUpdatedBy()))
-            .satisfies(a -> assertThat(a.getAction()).as("check action").isEqualTo(expected.getAction()))
             .satisfies(a ->
                 assertThat(a.getCreatedAt())
                     .as("check createdAt")

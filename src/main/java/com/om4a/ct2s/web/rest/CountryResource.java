@@ -174,6 +174,13 @@ public class CountryResource {
         return ResponseUtil.wrapOrNotFound(country);
     }
 
+    @GetMapping("/code/{code}")
+    public ResponseEntity<Country> getCountryByCode(@PathVariable("code") String code) {
+        LOG.debug("REST request to get Country by code: {}", code);
+        Optional<Country> country = countryRepository.findByCode(code);
+        return ResponseUtil.wrapOrNotFound(country);
+    }
+
     /**
      * {@code DELETE  /countries/:id} : delete the "id" country.
      *

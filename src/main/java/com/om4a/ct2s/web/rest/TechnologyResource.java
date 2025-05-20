@@ -174,6 +174,13 @@ public class TechnologyResource {
         return ResponseUtil.wrapOrNotFound(technology);
     }
 
+    @GetMapping("/name/{name}")
+    public ResponseEntity<Technology> getTechnologyByName(@PathVariable("name") String name) {
+        LOG.debug("REST request to get Technology by name : {}", name);
+        Optional<Technology> technology = technologyRepository.findByName(name);
+        return ResponseUtil.wrapOrNotFound(technology);
+    }
+
     /**
      * {@code DELETE  /technologies/:id} : delete the "id" technology.
      *

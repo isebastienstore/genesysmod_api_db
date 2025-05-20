@@ -1,7 +1,9 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactElectricityConsumption;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactElectricityConsumptionRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactElectricityConsumptionSearchRepository;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
@@ -9,6 +11,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,7 +21,10 @@ import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.mongodb.core.query.Meta;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.ResponseUtil;
@@ -39,12 +47,16 @@ public class FactElectricityConsumptionResource {
 
     private final FactElectricityConsumptionSearchRepository factElectricityConsumptionSearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
     public FactElectricityConsumptionResource(
         FactElectricityConsumptionRepository factElectricityConsumptionRepository,
-        FactElectricityConsumptionSearchRepository factElectricityConsumptionSearchRepository
+        FactElectricityConsumptionSearchRepository factElectricityConsumptionSearchRepository,
+        MetadataRepository metadataRepository
     ) {
         this.factElectricityConsumptionRepository = factElectricityConsumptionRepository;
         this.factElectricityConsumptionSearchRepository = factElectricityConsumptionSearchRepository;
+        this.metadataRepository = metadataRepository;
     }
 
     /**
@@ -54,14 +66,22 @@ public class FactElectricityConsumptionResource {
      * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factElectricityConsumption, or with status {@code 400 (Bad Request)} if the factElectricityConsumption has already an ID.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PostMapping("")
+    @PostMapping("/{source}")
     public ResponseEntity<FactElectricityConsumption> createFactElectricityConsumption(
-        @Valid @RequestBody FactElectricityConsumption factElectricityConsumption
+        @Valid @RequestBody FactElectricityConsumption factElectricityConsumption,
+        String source
     ) throws URISyntaxException {
         LOG.debug("REST request to save FactElectricityConsumption : {}", factElectricityConsumption);
         if (factElectricityConsumption.getId() != null) {
             throw new BadRequestAlertException("A new factElectricityConsumption cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        String currentUserLogin = SecurityContextHolder.getContext().getAuthentication().getName();
+        Metadata metadata = new Metadata();
+        metadata.setSource(source);
+        metadata.setCreatedAt(ZonedDateTime.now());
+        metadata.setCreatedBy(currentUserLogin);
+
+        factElectricityConsumption.setMetadata(metadata);
         factElectricityConsumption = factElectricityConsumptionRepository.save(factElectricityConsumption);
         factElectricityConsumptionSearchRepository.index(factElectricityConsumption);
         return ResponseEntity.created(new URI("/api/fact-electricity-consumptions/" + factElectricityConsumption.getId()))
@@ -95,6 +115,9 @@ public class FactElectricityConsumptionResource {
         if (!factElectricityConsumptionRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
+
+        factElectricityConsumption.getMetadata().setUpdatedAt(ZonedDateTime.now());
+        factElectricityConsumption.getMetadata().setUpdatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
 
         factElectricityConsumption = factElectricityConsumptionRepository.save(factElectricityConsumption);
         factElectricityConsumptionSearchRepository.index(factElectricityConsumption);
@@ -136,6 +159,12 @@ public class FactElectricityConsumptionResource {
             .map(existingFactElectricityConsumption -> {
                 if (factElectricityConsumption.getValue() != null) {
                     existingFactElectricityConsumption.setValue(factElectricityConsumption.getValue());
+                }
+                if (factElectricityConsumption.getMetadata() != null) {
+                    existingFactElectricityConsumption.getMetadata().setUpdatedAt(ZonedDateTime.now());
+                    existingFactElectricityConsumption
+                        .getMetadata()
+                        .setUpdatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
                 }
 
                 return existingFactElectricityConsumption;

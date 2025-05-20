@@ -27,9 +27,13 @@ public class Metadata implements Serializable {
     @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Text)
     private String updatedBy;
 
-    @Field("action")
+    @Field("last_access_at")
     @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Text)
-    private String action;
+    private ZonedDateTime lastAccessAt;
+
+    @Field("last_access_by")
+    @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Text)
+    private String lastAccessBy;
 
     @Field("created_at")
     private ZonedDateTime createdAt;
@@ -56,6 +60,22 @@ public class Metadata implements Serializable {
         this.id = id;
     }
 
+    public ZonedDateTime getLastAccessAt() {
+        return lastAccessAt;
+    }
+
+    public void setLastAccessAt(ZonedDateTime lastAccessAt) {
+        this.lastAccessAt = lastAccessAt;
+    }
+
+    public String getLastAccessBy() {
+        return lastAccessBy;
+    }
+
+    public void setLastAccessBy(String lastAccessBy) {
+        this.lastAccessBy = lastAccessBy;
+    }
+
     public String getCreatedBy() {
         return this.createdBy;
     }
@@ -80,19 +100,6 @@ public class Metadata implements Serializable {
 
     public void setUpdatedBy(String updatedBy) {
         this.updatedBy = updatedBy;
-    }
-
-    public String getAction() {
-        return this.action;
-    }
-
-    public Metadata action(String action) {
-        this.setAction(action);
-        return this;
-    }
-
-    public void setAction(String action) {
-        this.action = action;
     }
 
     public ZonedDateTime getCreatedAt() {
@@ -153,17 +160,32 @@ public class Metadata implements Serializable {
         return getClass().hashCode();
     }
 
-    // prettier-ignore
     @Override
     public String toString() {
-        return "Metadata{" +
-            "id=" + getId() +
-            ", createdBy='" + getCreatedBy() + "'" +
-            ", updatedBy='" + getUpdatedBy() + "'" +
-            ", action='" + getAction() + "'" +
-            ", createdAt='" + getCreatedAt() + "'" +
-            ", updatedAt='" + getUpdatedAt() + "'" +
-            ", source='" + getSource() + "'" +
-            "}";
+        return (
+            "Metadata{" +
+            "id='" +
+            id +
+            '\'' +
+            ", createdBy='" +
+            createdBy +
+            '\'' +
+            ", updatedBy='" +
+            updatedBy +
+            '\'' +
+            ", lastAccessAt=" +
+            lastAccessAt +
+            ", lastAccessBy='" +
+            lastAccessBy +
+            '\'' +
+            ", createdAt=" +
+            createdAt +
+            ", updatedAt=" +
+            updatedAt +
+            ", source='" +
+            source +
+            '\'' +
+            '}'
+        );
     }
 }

@@ -2,6 +2,7 @@ package com.om4a.ct2s.domain;
 
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import org.checkerframework.common.aliasing.qual.Unique;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -19,6 +20,7 @@ public class Year implements Serializable {
     @Id
     private String id;
 
+    @Unique
     @NotNull
     @Min(value = 1900)
     @Field("year")
