@@ -33,7 +33,7 @@ spring:
       enabled: false
   data:
     mongodb:
-      uri: mongodb://localhost:27017/genesysmodApiDb
+      uri: mongodb://localhost:27017/genesysmodApiDbProd
   elasticsearch:
     uris: http://localhost:9200
   mail:

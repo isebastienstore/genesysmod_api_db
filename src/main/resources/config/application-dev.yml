@@ -37,7 +37,7 @@ spring:
       indent-output: true
   data:
     mongodb:
-      uri: mongodb://localhost:27017/genesysmodApiDb
+      uri: mongodb://localhost:27017/genesysmodApiDbDev
   elasticsearch:
     uris: http://localhost:9200
   mail:

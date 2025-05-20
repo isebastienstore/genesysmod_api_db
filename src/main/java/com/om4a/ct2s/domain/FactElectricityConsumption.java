@@ -35,7 +35,6 @@ public class FactElectricityConsumption implements Serializable {
     private Country country;
 
     @DBRef
-    @NotNull
     @Field("metadata")
     private Metadata metadata;
 
