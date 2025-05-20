@@ -1,0 +1,2 @@
+org.springframework.test.context.ContextCustomizerFactory = \
+    com.om4a.ct2s.config.TestContainersSpringContextCustomizerFactory

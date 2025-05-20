@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "changelogDate": "20250520093220"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "fixedCost",
+      "fieldType": "Double",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "variableCost",
+      "fieldType": "Double",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "FactTradeCost",
+  "relationships": [
+    {
+      "otherEntityName": "fuel",
+      "relationshipName": "fuel",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    },
+    {
+      "otherEntityName": "metadata",
+      "relationshipName": "metadata",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    }
+  ]
+}

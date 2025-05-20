@@ -1,0 +1,54 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factTradeCost(); as factTradeCostRef) {
+      <div>
+        <h2 data-cy="factTradeCostDetailsHeading"><span>Fact Trade Cost</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factTradeCostRef.id }}</span>
+          </dd>
+          <dt><span>Fixed Cost</span></dt>
+          <dd>
+            <span>{{ factTradeCostRef.fixedCost }}</span>
+          </dd>
+          <dt><span>Variable Cost</span></dt>
+          <dd>
+            <span>{{ factTradeCostRef.variableCost }}</span>
+          </dd>
+          <dt><span>Fuel</span></dt>
+          <dd>
+            @if (factTradeCost()!.fuel) {
+              <div>
+                <a [routerLink]="['/fuel', factTradeCost()!.fuel?.id, 'view']">{{ factTradeCostRef.fuel?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factTradeCost()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factTradeCost()!.metadata?.id, 'view']">{{ factTradeCostRef.metadata?.id }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button type="button" [routerLink]="['/fact-trade-cost', factTradeCostRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

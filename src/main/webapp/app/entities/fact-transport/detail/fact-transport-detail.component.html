@@ -1,0 +1,84 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factTransport(); as factTransportRef) {
+      <div>
+        <h2 data-cy="factTransportDetailsHeading"><span>Fact Transport</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factTransportRef.id }}</span>
+          </dd>
+          <dt><span>Value</span></dt>
+          <dd>
+            <span>{{ factTransportRef.value }}</span>
+          </dd>
+          <dt><span>Type Of Mobility</span></dt>
+          <dd>
+            <span>{{
+              {
+                null: '',
+                MOBILITY_PASSENGER_ROAD: 'MOBILITY_PASSENGER_ROAD',
+                MOBILITY_PASSENGER_ROAD_CONV: 'MOBILITY_PASSENGER_ROAD_CONV',
+                MOBILITY_PASSENGER_ROAD_RE: 'MOBILITY_PASSENGER_ROAD_RE',
+                MOBILITY_PASSENGER_RAIL: 'MOBILITY_PASSENGER_RAIL',
+                MOBILITY_PASSENGER_RAIL_CONV: 'MOBILITY_PASSENGER_RAIL_CONV',
+                MOBILITY_PASSENGER_RAIL_RE: 'MOBILITY_PASSENGER_RAIL_RE',
+                MOBILITY_PASSENGER_AIR: 'MOBILITY_PASSENGER_AIR',
+                MOBILITY_PASSENGER_AIR_CONV: 'MOBILITY_PASSENGER_AIR_CONV',
+                MOBILITY_PASSENGER_AIR_RE: 'MOBILITY_PASSENGER_AIR_RE',
+                MOBILITY_FREIGHT_ROAD: 'MOBILITY_FREIGHT_ROAD',
+                MOBILITY_FREIGHT_ROAD_CONV: 'MOBILITY_FREIGHT_ROAD_CONV',
+                MOBILITY_FREIGHT_ROAD_RE: 'MOBILITY_FREIGHT_ROAD_RE',
+                MOBILITY_FREIGHT_RAIL: 'MOBILITY_FREIGHT_RAIL',
+                MOBILITY_FREIGHT_RAIL_CONV: 'MOBILITY_FREIGHT_RAIL_CONV',
+                MOBILITY_FREIGHT_RAIL_RE: 'MOBILITY_FREIGHT_RAIL_RE',
+                MOBILITY_FREIGHT_SHIP: 'MOBILITY_FREIGHT_SHIP',
+                MOBILITY_FREIGHT_SHIP_CONV: 'MOBILITY_FREIGHT_SHIP_CONV',
+                MOBILITY_FREIGHT_SHIP_RE: 'MOBILITY_FREIGHT_SHIP_RE',
+              }[factTransportRef.typeOfMobility ?? 'null']
+            }}</span>
+          </dd>
+          <dt><span>Year</span></dt>
+          <dd>
+            @if (factTransport()!.year) {
+              <div>
+                <a [routerLink]="['/year', factTransport()!.year?.id, 'view']">{{ factTransportRef.year?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Country</span></dt>
+          <dd>
+            @if (factTransport()!.country) {
+              <div>
+                <a [routerLink]="['/country', factTransport()!.country?.id, 'view']">{{ factTransportRef.country?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factTransport()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factTransport()!.metadata?.id, 'view']">{{ factTransportRef.metadata?.id }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button type="button" [routerLink]="['/fact-transport', factTransportRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

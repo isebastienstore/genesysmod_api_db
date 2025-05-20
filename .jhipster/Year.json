@@ -1,0 +1,16 @@
+{
+  "annotations": {
+    "changelogDate": "20250520093212"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "year",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required", "min"],
+      "fieldValidateRulesMin": "1900"
+    }
+  ],
+  "name": "Year",
+  "relationships": []
+}

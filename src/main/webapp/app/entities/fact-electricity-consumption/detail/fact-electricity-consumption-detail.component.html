@@ -1,0 +1,66 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factElectricityConsumption(); as factElectricityConsumptionRef) {
+      <div>
+        <h2 data-cy="factElectricityConsumptionDetailsHeading"><span>Fact Electricity Consumption</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factElectricityConsumptionRef.id }}</span>
+          </dd>
+          <dt><span>Value</span></dt>
+          <dd>
+            <span>{{ factElectricityConsumptionRef.value }}</span>
+          </dd>
+          <dt><span>Year</span></dt>
+          <dd>
+            @if (factElectricityConsumption()!.year) {
+              <div>
+                <a [routerLink]="['/year', factElectricityConsumption()!.year?.id, 'view']">{{ factElectricityConsumptionRef.year?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Country</span></dt>
+          <dd>
+            @if (factElectricityConsumption()!.country) {
+              <div>
+                <a [routerLink]="['/country', factElectricityConsumption()!.country?.id, 'view']">{{
+                  factElectricityConsumptionRef.country?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factElectricityConsumption()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factElectricityConsumption()!.metadata?.id, 'view']">{{
+                  factElectricityConsumptionRef.metadata?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button
+          type="button"
+          [routerLink]="['/fact-electricity-consumption', factElectricityConsumptionRef.id, 'edit']"
+          class="btn btn-primary"
+        >
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

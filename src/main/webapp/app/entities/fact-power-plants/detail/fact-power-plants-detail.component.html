@@ -1,0 +1,94 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factPowerPlants(); as factPowerPlantsRef) {
+      <div>
+        <h2 data-cy="factPowerPlantsDetailsHeading"><span>Fact Power Plants</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factPowerPlantsRef.id }}</span>
+          </dd>
+          <dt><span>Name</span></dt>
+          <dd>
+            <span>{{ factPowerPlantsRef.name }}</span>
+          </dd>
+          <dt><span>Intalled Capacity</span></dt>
+          <dd>
+            <span>{{ factPowerPlantsRef.intalledCapacity }}</span>
+          </dd>
+          <dt><span>Availability Capacity</span></dt>
+          <dd>
+            <span>{{ factPowerPlantsRef.availabilityCapacity }}</span>
+          </dd>
+          <dt><span>Status</span></dt>
+          <dd>
+            <span>{{
+              { null: '', OPERATIONAL: 'OPERATIONAL', NO_OPERATIONAL: 'NO_OPERATIONAL', PLANNED: 'PLANNED' }[
+                factPowerPlantsRef.status ?? 'null'
+              ]
+            }}</span>
+          </dd>
+          <dt><span>Commissioning Date</span></dt>
+          <dd>
+            @if (factPowerPlants()!.commissioningDate) {
+              <div>
+                <a [routerLink]="['/year', factPowerPlants()!.commissioningDate?.id, 'view']">{{
+                  factPowerPlantsRef.commissioningDate?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Decommissioning Date</span></dt>
+          <dd>
+            @if (factPowerPlants()!.decommissioningDate) {
+              <div>
+                <a [routerLink]="['/year', factPowerPlants()!.decommissioningDate?.id, 'view']">{{
+                  factPowerPlantsRef.decommissioningDate?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Country</span></dt>
+          <dd>
+            @if (factPowerPlants()!.country) {
+              <div>
+                <a [routerLink]="['/country', factPowerPlants()!.country?.id, 'view']">{{ factPowerPlantsRef.country?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Technology</span></dt>
+          <dd>
+            @if (factPowerPlants()!.technology) {
+              <div>
+                <a [routerLink]="['/technology', factPowerPlants()!.technology?.id, 'view']">{{ factPowerPlantsRef.technology?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factPowerPlants()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factPowerPlants()!.metadata?.id, 'view']">{{ factPowerPlantsRef.metadata?.id }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button type="button" [routerLink]="['/fact-power-plants', factPowerPlantsRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,80 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factRenewablePotential(); as factRenewablePotentialRef) {
+      <div>
+        <h2 data-cy="factRenewablePotentialDetailsHeading"><span>Fact Renewable Potential</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factRenewablePotentialRef.id }}</span>
+          </dd>
+          <dt><span>Max Capacity</span></dt>
+          <dd>
+            <span>{{ factRenewablePotentialRef.maxCapacity }}</span>
+          </dd>
+          <dt><span>Available Capacity</span></dt>
+          <dd>
+            <span>{{ factRenewablePotentialRef.availableCapacity }}</span>
+          </dd>
+          <dt><span>Min Capacity</span></dt>
+          <dd>
+            <span>{{ factRenewablePotentialRef.minCapacity }}</span>
+          </dd>
+          <dt><span>Country</span></dt>
+          <dd>
+            @if (factRenewablePotential()!.country) {
+              <div>
+                <a [routerLink]="['/country', factRenewablePotential()!.country?.id, 'view']">{{
+                  factRenewablePotentialRef.country?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Year</span></dt>
+          <dd>
+            @if (factRenewablePotential()!.year) {
+              <div>
+                <a [routerLink]="['/year', factRenewablePotential()!.year?.id, 'view']">{{ factRenewablePotentialRef.year?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Technology</span></dt>
+          <dd>
+            @if (factRenewablePotential()!.technology) {
+              <div>
+                <a [routerLink]="['/technology', factRenewablePotential()!.technology?.id, 'view']">{{
+                  factRenewablePotentialRef.technology?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factRenewablePotential()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factRenewablePotential()!.metadata?.id, 'view']">{{
+                  factRenewablePotentialRef.metadata?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button type="button" [routerLink]="['/fact-renewable-potential', factRenewablePotentialRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

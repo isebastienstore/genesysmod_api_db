@@ -1,0 +1,40 @@
+{
+  "annotations": {
+    "changelogDate": "20250520093222"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "value",
+      "fieldType": "Double",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "typeOfMobility",
+      "fieldType": "ModalType",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "MOBILITY_PASSENGER_ROAD,MOBILITY_PASSENGER_ROAD_CONV,MOBILITY_PASSENGER_ROAD_RE,MOBILITY_PASSENGER_RAIL,MOBILITY_PASSENGER_RAIL_CONV,MOBILITY_PASSENGER_RAIL_RE,MOBILITY_PASSENGER_AIR,MOBILITY_PASSENGER_AIR_CONV,MOBILITY_PASSENGER_AIR_RE,MOBILITY_FREIGHT_ROAD,MOBILITY_FREIGHT_ROAD_CONV,MOBILITY_FREIGHT_ROAD_RE,MOBILITY_FREIGHT_RAIL,MOBILITY_FREIGHT_RAIL_CONV,MOBILITY_FREIGHT_RAIL_RE,MOBILITY_FREIGHT_SHIP,MOBILITY_FREIGHT_SHIP_CONV,MOBILITY_FREIGHT_SHIP_RE"
+    }
+  ],
+  "name": "FactTransport",
+  "relationships": [
+    {
+      "otherEntityName": "year",
+      "relationshipName": "year",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    },
+    {
+      "otherEntityName": "country",
+      "relationshipName": "country",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    },
+    {
+      "otherEntityName": "metadata",
+      "relationshipName": "metadata",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    }
+  ]
+}

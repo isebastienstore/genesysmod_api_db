@@ -1,0 +1,7 @@
+export enum StatusType {
+  OPERATIONAL = 'OPERATIONAL',
+
+  NO_OPERATIONAL = 'NO_OPERATIONAL',
+
+  PLANNED = 'PLANNED',
+}

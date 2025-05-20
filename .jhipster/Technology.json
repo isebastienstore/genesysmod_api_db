@@ -1,0 +1,22 @@
+{
+  "annotations": {
+    "changelogDate": "20250520093214"
+  },
+  "applications": "*",
+  "fields": [
+    {
+      "fieldName": "name",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "maxlength"],
+      "fieldValidateRulesMaxlength": "255"
+    },
+    {
+      "fieldName": "category",
+      "fieldType": "CategoryType",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "THERMAL,RENEWABLE"
+    }
+  ],
+  "name": "Technology",
+  "relationships": []
+}

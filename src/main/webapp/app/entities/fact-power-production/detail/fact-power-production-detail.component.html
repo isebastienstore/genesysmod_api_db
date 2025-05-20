@@ -1,0 +1,76 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factPowerProduction(); as factPowerProductionRef) {
+      <div>
+        <h2 data-cy="factPowerProductionDetailsHeading"><span>Fact Power Production</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factPowerProductionRef.id }}</span>
+          </dd>
+          <dt><span>Value</span></dt>
+          <dd>
+            <span>{{ factPowerProductionRef.value }}</span>
+          </dd>
+          <dt><span>Year</span></dt>
+          <dd>
+            @if (factPowerProduction()!.year) {
+              <div>
+                <a [routerLink]="['/year', factPowerProduction()!.year?.id, 'view']">{{ factPowerProductionRef.year?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Country</span></dt>
+          <dd>
+            @if (factPowerProduction()!.country) {
+              <div>
+                <a [routerLink]="['/country', factPowerProduction()!.country?.id, 'view']">{{ factPowerProductionRef.country?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Technology</span></dt>
+          <dd>
+            @if (factPowerProduction()!.technology) {
+              <div>
+                <a [routerLink]="['/technology', factPowerProduction()!.technology?.id, 'view']">{{
+                  factPowerProductionRef.technology?.id
+                }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Fuel</span></dt>
+          <dd>
+            @if (factPowerProduction()!.fuel) {
+              <div>
+                <a [routerLink]="['/fuel', factPowerProduction()!.fuel?.id, 'view']">{{ factPowerProductionRef.fuel?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factPowerProduction()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factPowerProduction()!.metadata?.id, 'view']">{{ factPowerProductionRef.metadata?.id }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button type="button" [routerLink]="['/fact-power-production', factPowerProductionRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

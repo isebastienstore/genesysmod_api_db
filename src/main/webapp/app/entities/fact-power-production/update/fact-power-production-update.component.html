@@ -1,0 +1,121 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    <form name="editForm" novalidate (ngSubmit)="save()" [formGroup]="editForm">
+      <h2 id="jhi-fact-power-production-heading" data-cy="FactPowerProductionCreateUpdateHeading">
+        Create or edit a Fact Power Production
+      </h2>
+
+      <div>
+        <jhi-alert-error />
+
+        @if (editForm.controls.id.value !== null) {
+          <div class="mb-3">
+            <label class="form-label" for="field_id">ID</label>
+            <input type="text" class="form-control" name="id" id="field_id" data-cy="id" formControlName="id" [readonly]="true" />
+          </div>
+        }
+
+        @let valueRef = editForm.get('value')!;
+        <div class="mb-3">
+          <label class="form-label" for="field_value">Value</label>
+          <input type="number" class="form-control" name="value" id="field_value" data-cy="value" formControlName="value" />
+          @if (valueRef.invalid && (valueRef.dirty || valueRef.touched)) {
+            <div>
+              @if (editForm.get('value')?.errors?.required) {
+                <small class="form-text text-danger">This field is required.</small>
+              }
+              <small class="form-text text-danger" [hidden]="!editForm.get('value')?.errors?.number">This field should be a number.</small>
+            </div>
+          }
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_year">Year</label>
+          <select class="form-control" id="field_year" data-cy="year" name="year" formControlName="year" [compareWith]="compareYear">
+            <option [ngValue]="null"></option>
+            @for (yearOption of yearsSharedCollection; track $index) {
+              <option [ngValue]="yearOption">{{ yearOption.id }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_country">Country</label>
+          <select
+            class="form-control"
+            id="field_country"
+            data-cy="country"
+            name="country"
+            formControlName="country"
+            [compareWith]="compareCountry"
+          >
+            <option [ngValue]="null"></option>
+            @for (countryOption of countriesSharedCollection; track $index) {
+              <option [ngValue]="countryOption">{{ countryOption.id }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_technology">Technology</label>
+          <select
+            class="form-control"
+            id="field_technology"
+            data-cy="technology"
+            name="technology"
+            formControlName="technology"
+            [compareWith]="compareTechnology"
+          >
+            <option [ngValue]="null"></option>
+            @for (technologyOption of technologiesSharedCollection; track $index) {
+              <option [ngValue]="technologyOption">{{ technologyOption.id }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_fuel">Fuel</label>
+          <select class="form-control" id="field_fuel" data-cy="fuel" name="fuel" formControlName="fuel" [compareWith]="compareFuel">
+            <option [ngValue]="null"></option>
+            @for (fuelOption of fuelsSharedCollection; track $index) {
+              <option [ngValue]="fuelOption">{{ fuelOption.id }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="field_metadata">Metadata</label>
+          <select
+            class="form-control"
+            id="field_metadata"
+            data-cy="metadata"
+            name="metadata"
+            formControlName="metadata"
+            [compareWith]="compareMetadata"
+          >
+            <option [ngValue]="null"></option>
+            @for (metadataOption of metadataSharedCollection; track $index) {
+              <option [ngValue]="metadataOption">{{ metadataOption.id }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" (click)="previousState()">
+          <fa-icon icon="ban"></fa-icon>&nbsp;<span>Cancel</span>
+        </button>
+
+        <button
+          type="submit"
+          id="save-entity"
+          data-cy="entityCreateSaveButton"
+          [disabled]="editForm.invalid || isSaving"
+          class="btn btn-primary"
+        >
+          <fa-icon icon="save"></fa-icon>&nbsp;<span>Save</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

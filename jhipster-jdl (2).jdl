@@ -1,0 +1,149 @@
+// =================== Enums ==========================
+enum StatusType {
+    OPERATIONAL,
+    NO_OPERATIONAL,
+    PLANNED
+}
+
+enum CategoryType {
+    THERMAL,
+    RENEWABLE
+}
+
+enum ModalType {
+    MOBILITY_PASSENGER_ROAD,
+    MOBILITY_PASSENGER_ROAD_CONV,
+    MOBILITY_PASSENGER_ROAD_RE,
+    MOBILITY_PASSENGER_RAIL,
+    MOBILITY_PASSENGER_RAIL_CONV,
+    MOBILITY_PASSENGER_RAIL_RE,
+    MOBILITY_PASSENGER_AIR,
+    MOBILITY_PASSENGER_AIR_CONV,
+    MOBILITY_PASSENGER_AIR_RE,
+    MOBILITY_FREIGHT_ROAD,
+    MOBILITY_FREIGHT_ROAD_CONV,
+    MOBILITY_FREIGHT_ROAD_RE,
+    MOBILITY_FREIGHT_RAIL,
+    MOBILITY_FREIGHT_RAIL_CONV,
+    MOBILITY_FREIGHT_RAIL_RE,
+    MOBILITY_FREIGHT_SHIP,
+    MOBILITY_FREIGHT_SHIP_CONV,
+    MOBILITY_FREIGHT_SHIP_RE
+}
+
+// ================== Les dimensions ==========================
+// Année :
+entity Year {
+    year Integer required min(1900)
+}
+// Pays :
+entity Country {
+    code String required maxlength(2), 
+    name String required maxlength(255)
+}
+// Les technolohie
+entity Technology {
+    name String required maxlength(255),
+    category CategoryType required
+}
+// Les carburants 
+entity Fuel {
+    name String required maxlength(255)
+}
+
+// ================ Faits ===========================
+
+// Production d'electricité
+entity FactPowerProduction {
+    value Double required
+}
+relationship OneToOne {
+    FactPowerProduction {year} to Year,
+    FactPowerProduction {country} to Country,
+    FactPowerProduction {technology} to Technology,
+    FactPowerProduction {fuel} to Fuel
+}
+
+// Consommation d'élèctricité
+entity FactElectricityConsumption {
+    value Double required
+}
+relationship OneToOne {
+    FactElectricityConsumption {year} to Year,
+    FactElectricityConsumption {country} to Country
+}
+
+// liste des central electrique avec leur description 
+entity FactPowerPlants {
+    name String required,
+    intalledCapacity Double required,
+    availabilityCapacity Double required,
+    status StatusType
+}
+relationship OneToOne {
+    FactPowerPlants {commissioningDate} to Year,
+    FactPowerPlants {decommissioningDate} to Year,
+    FactPowerPlants {country} to Country,
+    FactPowerPlants {technology} to Technology
+}
+
+// Potentiel des renouvelables 
+entity FactRenewablePotential {
+    maxCapacity Double required,
+    availableCapacity Double required,
+    minCapacity Double required
+}
+relationship OneToOne {
+	FactRenewablePotential {country} to Country,
+    FactRenewablePotential {year} to Year,
+    FactRenewablePotential {technology} to Technology,
+}
+
+// Coût de commerces
+entity FactTradeCost {
+    fixedCost Double required,
+    variableCost Double required
+}
+relationship OneToOne {
+    FactTradeCost {fuel} to Fuel
+}
+
+// Capacité de commerce entre les pays
+entity FactTradeCapacity {
+    value Double required
+}
+relationship OneToOne {
+    FactTradeCapacity {year} to Year,
+    FactTradeCapacity {country1} to Country,
+    FactTradeCapacity {country2} to Country,
+    FactTradeCapacity {fuel} to Fuel
+}
+
+// repartition de la consommation sur les moyens de transport :
+entity FactTransport {
+    value Double required,
+    typeOfMobility ModalType required
+}
+relationship OneToOne {
+    FactTransport {year} to Year,
+    FactTransport {country} to Country
+}
+
+// Métadonnées
+entity Metadata {
+    createdBy String,
+    updatedBy String,
+    action String,
+    createdAt ZonedDateTime,
+    updatedAt ZonedDateTime,
+    source String
+}
+relationship OneToOne {
+    FactPowerProduction {metadata} to Metadata,
+    FactElectricityConsumption {metadata} to Metadata,
+    FactRenewablePotential {metadata} to Metadata,
+    FactTradeCost {metadata} to Metadata,
+    FactTradeCapacity {metadata} to Metadata,
+    FactTransport {metadata} to Metadata,
+    FactPowerPlants {metadata} to Metadata
+}

@@ -1,0 +1,183 @@
+<div>
+  <h2 id="page-heading" data-cy="FactTransportHeading">
+    <span>Fact Transports</span>
+
+    <div class="d-flex justify-content-end">
+      <button class="btn btn-info me-2" (click)="load()" [disabled]="isLoading">
+        <fa-icon icon="sync" [animation]="isLoading ? 'spin' : undefined"></fa-icon>
+        <span>Refresh list</span>
+      </button>
+
+      <button
+        id="jh-create-entity"
+        data-cy="entityCreateButton"
+        class="btn btn-primary jh-create-entity create-fact-transport"
+        [routerLink]="['/fact-transport/new']"
+      >
+        <fa-icon icon="plus"></fa-icon>
+        <span class="hidden-sm-down">Create a new Fact Transport</span>
+      </button>
+    </div>
+  </h2>
+
+  <jhi-alert-error />
+
+  <jhi-alert />
+
+  <form name="searchForm" class="row row-cols-sm-auto align-items-center">
+    <div class="col-sm-12">
+      <div class="input-group w-100 mt-3">
+        <label class="visually-hidden" for="currentSearch">Search for Fact Transport</label>
+        <input
+          type="text"
+          class="form-control"
+          [(ngModel)]="currentSearch"
+          id="currentSearch"
+          name="currentSearch"
+          placeholder="Search for Fact Transport"
+        />
+
+        <button class="btn btn-info" (click)="search(currentSearch)">
+          <fa-icon icon="search"></fa-icon>
+        </button>
+
+        @if (currentSearch) {
+          <button class="btn btn-danger" (click)="search('')">
+            <fa-icon icon="trash-alt"></fa-icon>
+          </button>
+        }
+      </div>
+    </div>
+  </form>
+
+  @if (factTransports().length === 0) {
+    <div class="alert alert-warning" id="no-result">
+      <span>No Fact Transports found</span>
+    </div>
+  } @else {
+    <div class="table-responsive table-entities" id="entities">
+      <table class="table table-striped" aria-describedby="page-heading">
+        <thead>
+          <tr jhiSort [(sortState)]="sortState" (sortChange)="navigateToWithComponentValues($event)">
+            <th scope="col" jhiSortBy="id">
+              <div class="d-flex">
+                <span>ID</span>
+                @if (!currentSearch) {
+                  <fa-icon class="p-1" icon="sort"></fa-icon>
+                }
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="value">
+              <div class="d-flex">
+                <span>Value</span>
+
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="typeOfMobility">
+              <div class="d-flex">
+                <span>Type Of Mobility</span>
+                @if (!currentSearch) {
+                  <fa-icon class="p-1" icon="sort"></fa-icon>
+                }
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="year.id">
+              <div class="d-flex">
+                <span>Year</span>
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="country.id">
+              <div class="d-flex">
+                <span>Country</span>
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col" jhiSortBy="metadata.id">
+              <div class="d-flex">
+                <span>Metadata</span>
+                <fa-icon class="p-1" icon="sort"></fa-icon>
+              </div>
+            </th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (factTransport of factTransports(); track trackId(factTransport)) {
+            <tr data-cy="entityTable">
+              <td>
+                <a [routerLink]="['/fact-transport', factTransport.id, 'view']">{{ factTransport.id }}</a>
+              </td>
+              <td>{{ factTransport.value }}</td>
+              <td>
+                {{
+                  {
+                    null: '',
+                    MOBILITY_PASSENGER_ROAD: 'MOBILITY_PASSENGER_ROAD',
+                    MOBILITY_PASSENGER_ROAD_CONV: 'MOBILITY_PASSENGER_ROAD_CONV',
+                    MOBILITY_PASSENGER_ROAD_RE: 'MOBILITY_PASSENGER_ROAD_RE',
+                    MOBILITY_PASSENGER_RAIL: 'MOBILITY_PASSENGER_RAIL',
+                    MOBILITY_PASSENGER_RAIL_CONV: 'MOBILITY_PASSENGER_RAIL_CONV',
+                    MOBILITY_PASSENGER_RAIL_RE: 'MOBILITY_PASSENGER_RAIL_RE',
+                    MOBILITY_PASSENGER_AIR: 'MOBILITY_PASSENGER_AIR',
+                    MOBILITY_PASSENGER_AIR_CONV: 'MOBILITY_PASSENGER_AIR_CONV',
+                    MOBILITY_PASSENGER_AIR_RE: 'MOBILITY_PASSENGER_AIR_RE',
+                    MOBILITY_FREIGHT_ROAD: 'MOBILITY_FREIGHT_ROAD',
+                    MOBILITY_FREIGHT_ROAD_CONV: 'MOBILITY_FREIGHT_ROAD_CONV',
+                    MOBILITY_FREIGHT_ROAD_RE: 'MOBILITY_FREIGHT_ROAD_RE',
+                    MOBILITY_FREIGHT_RAIL: 'MOBILITY_FREIGHT_RAIL',
+                    MOBILITY_FREIGHT_RAIL_CONV: 'MOBILITY_FREIGHT_RAIL_CONV',
+                    MOBILITY_FREIGHT_RAIL_RE: 'MOBILITY_FREIGHT_RAIL_RE',
+                    MOBILITY_FREIGHT_SHIP: 'MOBILITY_FREIGHT_SHIP',
+                    MOBILITY_FREIGHT_SHIP_CONV: 'MOBILITY_FREIGHT_SHIP_CONV',
+                    MOBILITY_FREIGHT_SHIP_RE: 'MOBILITY_FREIGHT_SHIP_RE',
+                  }[factTransport.typeOfMobility ?? 'null']
+                }}
+              </td>
+              <td>
+                @if (factTransport.year) {
+                  <div>
+                    <a [routerLink]="['/year', factTransport.year.id, 'view']">{{ factTransport.year.id }}</a>
+                  </div>
+                }
+              </td>
+              <td>
+                @if (factTransport.country) {
+                  <div>
+                    <a [routerLink]="['/country', factTransport.country.id, 'view']">{{ factTransport.country.id }}</a>
+                  </div>
+                }
+              </td>
+              <td>
+                @if (factTransport.metadata) {
+                  <div>
+                    <a [routerLink]="['/metadata', factTransport.metadata.id, 'view']">{{ factTransport.metadata.id }}</a>
+                  </div>
+                }
+              </td>
+              <td class="text-end">
+                <div class="btn-group">
+                  <a [routerLink]="['/fact-transport', factTransport.id, 'view']" class="btn btn-info btn-sm" data-cy="entityDetailsButton">
+                    <fa-icon icon="eye"></fa-icon>
+                    <span class="d-none d-md-inline">View</span>
+                  </a>
+
+                  <a [routerLink]="['/fact-transport', factTransport.id, 'edit']" class="btn btn-primary btn-sm" data-cy="entityEditButton">
+                    <fa-icon icon="pencil-alt"></fa-icon>
+                    <span class="d-none d-md-inline">Edit</span>
+                  </a>
+
+                  <button type="submit" (click)="delete(factTransport)" class="btn btn-danger btn-sm" data-cy="entityDeleteButton">
+                    <fa-icon icon="times"></fa-icon>
+                    <span class="d-none d-md-inline">Delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

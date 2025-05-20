@@ -1,0 +1,74 @@
+<div class="d-flex justify-content-center">
+  <div class="col-8">
+    @if (factTradeCapacity(); as factTradeCapacityRef) {
+      <div>
+        <h2 data-cy="factTradeCapacityDetailsHeading"><span>Fact Trade Capacity</span></h2>
+
+        <hr />
+
+        <jhi-alert-error />
+
+        <jhi-alert />
+
+        <dl class="row-md jh-entity-details">
+          <dt><span>ID</span></dt>
+          <dd>
+            <span>{{ factTradeCapacityRef.id }}</span>
+          </dd>
+          <dt><span>Value</span></dt>
+          <dd>
+            <span>{{ factTradeCapacityRef.value }}</span>
+          </dd>
+          <dt><span>Year</span></dt>
+          <dd>
+            @if (factTradeCapacity()!.year) {
+              <div>
+                <a [routerLink]="['/year', factTradeCapacity()!.year?.id, 'view']">{{ factTradeCapacityRef.year?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Country 1</span></dt>
+          <dd>
+            @if (factTradeCapacity()!.country1) {
+              <div>
+                <a [routerLink]="['/country', factTradeCapacity()!.country1?.id, 'view']">{{ factTradeCapacityRef.country1?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Country 2</span></dt>
+          <dd>
+            @if (factTradeCapacity()!.country2) {
+              <div>
+                <a [routerLink]="['/country', factTradeCapacity()!.country2?.id, 'view']">{{ factTradeCapacityRef.country2?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Fuel</span></dt>
+          <dd>
+            @if (factTradeCapacity()!.fuel) {
+              <div>
+                <a [routerLink]="['/fuel', factTradeCapacity()!.fuel?.id, 'view']">{{ factTradeCapacityRef.fuel?.id }}</a>
+              </div>
+            }
+          </dd>
+          <dt><span>Metadata</span></dt>
+          <dd>
+            @if (factTradeCapacity()!.metadata) {
+              <div>
+                <a [routerLink]="['/metadata', factTradeCapacity()!.metadata?.id, 'view']">{{ factTradeCapacityRef.metadata?.id }}</a>
+              </div>
+            }
+          </dd>
+        </dl>
+
+        <button type="submit" (click)="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
+          <fa-icon icon="arrow-left"></fa-icon>&nbsp;<span>Back</span>
+        </button>
+
+        <button type="button" [routerLink]="['/fact-trade-capacity', factTradeCapacityRef.id, 'edit']" class="btn btn-primary">
+          <fa-icon icon="pencil-alt"></fa-icon>&nbsp;<span>Edit</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>
