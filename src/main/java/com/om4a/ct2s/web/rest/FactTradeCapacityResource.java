@@ -1,8 +1,11 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactTradeCapacity;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactTradeCapacityRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactTradeCapacitySearchRepository;
+import com.om4a.ct2s.service.MetadataService;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
 import jakarta.validation.Valid;
@@ -39,28 +42,35 @@ public class FactTradeCapacityResource {
 
     private final FactTradeCapacitySearchRepository factTradeCapacitySearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
+    private final MetadataService metadataService;
+
     public FactTradeCapacityResource(
         FactTradeCapacityRepository factTradeCapacityRepository,
-        FactTradeCapacitySearchRepository factTradeCapacitySearchRepository
+        FactTradeCapacitySearchRepository factTradeCapacitySearchRepository,
+        MetadataRepository metadataRepository,
+        MetadataService metadataService
     ) {
         this.factTradeCapacityRepository = factTradeCapacityRepository;
         this.factTradeCapacitySearchRepository = factTradeCapacitySearchRepository;
+        this.metadataRepository = metadataRepository;
+        this.metadataService = metadataService;
     }
 
-    /**
-     * {@code POST  /fact-trade-capacities} : Create a new factTradeCapacity.
-     *
-     * @param factTradeCapacity the factTradeCapacity to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factTradeCapacity, or with status {@code 400 (Bad Request)} if the factTradeCapacity has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
-    @PostMapping("")
-    public ResponseEntity<FactTradeCapacity> createFactTradeCapacity(@Valid @RequestBody FactTradeCapacity factTradeCapacity)
-        throws URISyntaxException {
+    @PostMapping("/{source}")
+    public ResponseEntity<FactTradeCapacity> createFactTradeCapacity(
+        @Valid @RequestBody FactTradeCapacity factTradeCapacity,
+        @NotNull @PathVariable("source") String source
+    ) throws URISyntaxException {
         LOG.debug("REST request to save FactTradeCapacity : {}", factTradeCapacity);
         if (factTradeCapacity.getId() != null) {
             throw new BadRequestAlertException("A new factTradeCapacity cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        
+        //Ajout des metadonnees: qui a cree, quand et quelle est la source de donnee
+        factTradeCapacity.metadata(metadataService.generateCreationMetadata(source));
+
         factTradeCapacity = factTradeCapacityRepository.save(factTradeCapacity);
         factTradeCapacitySearchRepository.index(factTradeCapacity);
         return ResponseEntity.created(new URI("/api/fact-trade-capacities/" + factTradeCapacity.getId()))
@@ -68,16 +78,6 @@ public class FactTradeCapacityResource {
             .body(factTradeCapacity);
     }
 
-    /**
-     * {@code PUT  /fact-trade-capacities/:id} : Updates an existing factTradeCapacity.
-     *
-     * @param id the id of the factTradeCapacity to save.
-     * @param factTradeCapacity the factTradeCapacity to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated factTradeCapacity,
-     * or with status {@code 400 (Bad Request)} if the factTradeCapacity is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the factTradeCapacity couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<FactTradeCapacity> updateFactTradeCapacity(
         @PathVariable(value = "id", required = false) final String id,
@@ -95,6 +95,9 @@ public class FactTradeCapacityResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        //Mise a jour des metadonnees: qui a modifie et quand
+        metadataService.updateMetadata(factTradeCapacity.getMetadata());
+
         factTradeCapacity = factTradeCapacityRepository.save(factTradeCapacity);
         factTradeCapacitySearchRepository.index(factTradeCapacity);
         return ResponseEntity.ok()
@@ -102,23 +105,13 @@ public class FactTradeCapacityResource {
             .body(factTradeCapacity);
     }
 
-    /**
-     * {@code PATCH  /fact-trade-capacities/:id} : Partial updates given fields of an existing factTradeCapacity, field will ignore if it is null
-     *
-     * @param id the id of the factTradeCapacity to save.
-     * @param factTradeCapacity the factTradeCapacity to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated factTradeCapacity,
-     * or with status {@code 400 (Bad Request)} if the factTradeCapacity is not valid,
-     * or with status {@code 404 (Not Found)} if the factTradeCapacity is not found,
-     * or with status {@code 500 (Internal Server Error)} if the factTradeCapacity couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<FactTradeCapacity> partialUpdateFactTradeCapacity(
         @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody FactTradeCapacity factTradeCapacity
     ) throws URISyntaxException {
         LOG.debug("REST request to partial update FactTradeCapacity partially : {}, {}", id, factTradeCapacity);
+
         if (factTradeCapacity.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -136,6 +129,10 @@ public class FactTradeCapacityResource {
                 if (factTradeCapacity.getValue() != null) {
                     existingFactTradeCapacity.setValue(factTradeCapacity.getValue());
                 }
+                if (factTradeCapacity.getMetadata() != null) {
+                    //Met à jour les métadonnées via le service comme dans update
+                    metadataService.updateMetadata(existingFactTradeCapacity.getMetadata());
+                }
 
                 return existingFactTradeCapacity;
             })
@@ -151,51 +148,52 @@ public class FactTradeCapacityResource {
         );
     }
 
-    /**
-     * {@code GET  /fact-trade-capacities} : get all the factTradeCapacities.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of factTradeCapacities in body.
-     */
     @GetMapping("")
     public List<FactTradeCapacity> getAllFactTradeCapacities() {
         LOG.debug("REST request to get all FactTradeCapacities");
-        return factTradeCapacityRepository.findAll();
+        List<FactTradeCapacity> result = factTradeCapacityRepository.findAll();
+        for (FactTradeCapacity fact : result) {
+            metadataService.updateLastInfosMetadata(fact.getMetadata());
+        }
+        return result;
     }
 
-    /**
-     * {@code GET  /fact-trade-capacities/:id} : get the "id" factTradeCapacity.
-     *
-     * @param id the id of the factTradeCapacity to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the factTradeCapacity, or with status {@code 404 (Not Found)}.
-     */
     @GetMapping("/{id}")
-    public ResponseEntity<FactTradeCapacity> getFactTradeCapacity(@PathVariable("id") String id) {
+    public ResponseEntity<FactTradeCapacity> getFactTradeCapacity(@PathVariable String id) {
         LOG.debug("REST request to get FactTradeCapacity : {}", id);
-        Optional<FactTradeCapacity> factTradeCapacity = factTradeCapacityRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(factTradeCapacity);
+        Optional<FactTradeCapacity> ftcOpt = factTradeCapacityRepository.findById(id);
+        if (ftcOpt.isPresent()) {
+            Metadata metadata = ftcOpt.get().getMetadata();
+            metadataService.updateLastInfosMetadata(metadata);
+        }
+        return ResponseUtil.wrapOrNotFound(ftcOpt);
     }
 
-    /**
-     * {@code DELETE  /fact-trade-capacities/:id} : delete the "id" factTradeCapacity.
-     *
-     * @param id the id of the factTradeCapacity to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFactTradeCapacity(@PathVariable("id") String id) {
         LOG.debug("REST request to delete FactTradeCapacity : {}", id);
-        factTradeCapacityRepository.deleteById(id);
-        factTradeCapacitySearchRepository.deleteFromIndexById(id);
-        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id)).build();
+
+        Optional<FactTradeCapacity> optionalFact = factTradeCapacityRepository.findById(id);
+
+        if (optionalFact.isPresent()) {
+            FactTradeCapacity fact = optionalFact.get();
+
+            //Vérification de la présence des métadonnées avant suppression
+            if (fact.getMetadata() != null && fact.getMetadata().getId() != null) {
+                metadataService.deleteMetadataById(fact.getMetadata().getId());
+            }
+
+            factTradeCapacityRepository.deleteById(id);
+            factTradeCapacitySearchRepository.deleteFromIndexById(id);
+
+            return ResponseEntity.noContent()
+                .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id))
+                .build();
+        } else {
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
     }
 
-    /**
-     * {@code SEARCH  /fact-trade-capacities/_search?query=:query} : search for the factTradeCapacity corresponding
-     * to the query.
-     *
-     * @param query the query of the factTradeCapacity search.
-     * @return the result of the search.
-     */
     @GetMapping("/_search")
     public List<FactTradeCapacity> searchFactTradeCapacities(@RequestParam("query") String query) {
         LOG.debug("REST request to search FactTradeCapacities for query {}", query);

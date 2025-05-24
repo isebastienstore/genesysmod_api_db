@@ -28,6 +28,7 @@ public class FactTradeCost implements Serializable {
     @Field("variable_cost")
     private Double variableCost;
 
+    @NotNull
     @DBRef
     @Field("fuel")
     private Fuel fuel;

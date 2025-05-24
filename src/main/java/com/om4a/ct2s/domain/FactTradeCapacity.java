@@ -24,18 +24,22 @@ public class FactTradeCapacity implements Serializable {
     @Field("value")
     private Double value;
 
+    @NotNull
     @DBRef
     @Field("year")
     private Year year;
 
+    @NotNull
     @DBRef
     @Field("country1")
     private Country country1;
 
+    @NotNull
     @DBRef
     @Field("country2")
     private Country country2;
 
+    @NotNull
     @DBRef
     @Field("fuel")
     private Fuel fuel;

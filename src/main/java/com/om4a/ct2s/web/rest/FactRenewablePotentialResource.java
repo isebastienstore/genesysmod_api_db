@@ -1,8 +1,11 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactRenewablePotential;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactRenewablePotentialRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactRenewablePotentialSearchRepository;
+import com.om4a.ct2s.service.MetadataService;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
 import jakarta.validation.Valid;
@@ -39,29 +42,35 @@ public class FactRenewablePotentialResource {
 
     private final FactRenewablePotentialSearchRepository factRenewablePotentialSearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
+    private final MetadataService metadataService;
+
     public FactRenewablePotentialResource(
         FactRenewablePotentialRepository factRenewablePotentialRepository,
-        FactRenewablePotentialSearchRepository factRenewablePotentialSearchRepository
+        FactRenewablePotentialSearchRepository factRenewablePotentialSearchRepository,
+        MetadataRepository metadataRepository,
+        MetadataService metadataService
     ) {
         this.factRenewablePotentialRepository = factRenewablePotentialRepository;
         this.factRenewablePotentialSearchRepository = factRenewablePotentialSearchRepository;
+        this.metadataRepository = metadataRepository;
+        this.metadataService = metadataService;
     }
 
-    /**
-     * {@code POST  /fact-renewable-potentials} : Create a new factRenewablePotential.
-     *
-     * @param factRenewablePotential the factRenewablePotential to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factRenewablePotential, or with status {@code 400 (Bad Request)} if the factRenewablePotential has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
-    @PostMapping("")
+    @PostMapping("/{source}")
     public ResponseEntity<FactRenewablePotential> createFactRenewablePotential(
-        @Valid @RequestBody FactRenewablePotential factRenewablePotential
+        @Valid @RequestBody FactRenewablePotential factRenewablePotential,
+        @NotNull @PathVariable("source") String source
     ) throws URISyntaxException {
         LOG.debug("REST request to save FactRenewablePotential : {}", factRenewablePotential);
         if (factRenewablePotential.getId() != null) {
             throw new BadRequestAlertException("A new factRenewablePotential cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        
+        //Ajout des metadonnees: qui a cree, quand et quelle est la source de donnee
+        factRenewablePotential.metadata(metadataService.generateCreationMetadata(source));
+
         factRenewablePotential = factRenewablePotentialRepository.save(factRenewablePotential);
         factRenewablePotentialSearchRepository.index(factRenewablePotential);
         return ResponseEntity.created(new URI("/api/fact-renewable-potentials/" + factRenewablePotential.getId()))
@@ -69,16 +78,6 @@ public class FactRenewablePotentialResource {
             .body(factRenewablePotential);
     }
 
-    /**
-     * {@code PUT  /fact-renewable-potentials/:id} : Updates an existing factRenewablePotential.
-     *
-     * @param id the id of the factRenewablePotential to save.
-     * @param factRenewablePotential the factRenewablePotential to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated factRenewablePotential,
-     * or with status {@code 400 (Bad Request)} if the factRenewablePotential is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the factRenewablePotential couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<FactRenewablePotential> updateFactRenewablePotential(
         @PathVariable(value = "id", required = false) final String id,
@@ -96,6 +95,9 @@ public class FactRenewablePotentialResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        //Mise a jour des metadonnees: qui a modifie et quand
+        metadataService.updateMetadata(factRenewablePotential.getMetadata());
+
         factRenewablePotential = factRenewablePotentialRepository.save(factRenewablePotential);
         factRenewablePotentialSearchRepository.index(factRenewablePotential);
         return ResponseEntity.ok()
@@ -103,23 +105,13 @@ public class FactRenewablePotentialResource {
             .body(factRenewablePotential);
     }
 
-    /**
-     * {@code PATCH  /fact-renewable-potentials/:id} : Partial updates given fields of an existing factRenewablePotential, field will ignore if it is null
-     *
-     * @param id the id of the factRenewablePotential to save.
-     * @param factRenewablePotential the factRenewablePotential to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated factRenewablePotential,
-     * or with status {@code 400 (Bad Request)} if the factRenewablePotential is not valid,
-     * or with status {@code 404 (Not Found)} if the factRenewablePotential is not found,
-     * or with status {@code 500 (Internal Server Error)} if the factRenewablePotential couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<FactRenewablePotential> partialUpdateFactRenewablePotential(
         @PathVariable(value = "id", required = false) final String id,
         @NotNull @RequestBody FactRenewablePotential factRenewablePotential
     ) throws URISyntaxException {
         LOG.debug("REST request to partial update FactRenewablePotential partially : {}, {}", id, factRenewablePotential);
+
         if (factRenewablePotential.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -143,6 +135,10 @@ public class FactRenewablePotentialResource {
                 if (factRenewablePotential.getMinCapacity() != null) {
                     existingFactRenewablePotential.setMinCapacity(factRenewablePotential.getMinCapacity());
                 }
+                if (factRenewablePotential.getMetadata() != null) {
+                    //Met à jour les métadonnées via le service comme dans update
+                    metadataService.updateMetadata(existingFactRenewablePotential.getMetadata());
+                }
 
                 return existingFactRenewablePotential;
             })
@@ -158,51 +154,52 @@ public class FactRenewablePotentialResource {
         );
     }
 
-    /**
-     * {@code GET  /fact-renewable-potentials} : get all the factRenewablePotentials.
-     *
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of factRenewablePotentials in body.
-     */
     @GetMapping("")
     public List<FactRenewablePotential> getAllFactRenewablePotentials() {
         LOG.debug("REST request to get all FactRenewablePotentials");
-        return factRenewablePotentialRepository.findAll();
+        List<FactRenewablePotential> result = factRenewablePotentialRepository.findAll();
+        for (FactRenewablePotential fact : result) {
+            metadataService.updateLastInfosMetadata(fact.getMetadata());
+        }
+        return result;
     }
 
-    /**
-     * {@code GET  /fact-renewable-potentials/:id} : get the "id" factRenewablePotential.
-     *
-     * @param id the id of the factRenewablePotential to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the factRenewablePotential, or with status {@code 404 (Not Found)}.
-     */
     @GetMapping("/{id}")
-    public ResponseEntity<FactRenewablePotential> getFactRenewablePotential(@PathVariable("id") String id) {
+    public ResponseEntity<FactRenewablePotential> getFactRenewablePotential(@PathVariable String id) {
         LOG.debug("REST request to get FactRenewablePotential : {}", id);
-        Optional<FactRenewablePotential> factRenewablePotential = factRenewablePotentialRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(factRenewablePotential);
+        Optional<FactRenewablePotential> frpOpt = factRenewablePotentialRepository.findById(id);
+        if (frpOpt.isPresent()) {
+            Metadata metadata = frpOpt.get().getMetadata();
+            metadataService.updateLastInfosMetadata(metadata);
+        }
+        return ResponseUtil.wrapOrNotFound(frpOpt);
     }
 
-    /**
-     * {@code DELETE  /fact-renewable-potentials/:id} : delete the "id" factRenewablePotential.
-     *
-     * @param id the id of the factRenewablePotential to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFactRenewablePotential(@PathVariable("id") String id) {
         LOG.debug("REST request to delete FactRenewablePotential : {}", id);
-        factRenewablePotentialRepository.deleteById(id);
-        factRenewablePotentialSearchRepository.deleteFromIndexById(id);
-        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id)).build();
+
+        Optional<FactRenewablePotential> optionalFact = factRenewablePotentialRepository.findById(id);
+
+        if (optionalFact.isPresent()) {
+            FactRenewablePotential fact = optionalFact.get();
+
+            //Vérification de la présence des métadonnées avant suppression
+            if (fact.getMetadata() != null && fact.getMetadata().getId() != null) {
+                metadataService.deleteMetadataById(fact.getMetadata().getId());
+            }
+
+            factRenewablePotentialRepository.deleteById(id);
+            factRenewablePotentialSearchRepository.deleteFromIndexById(id);
+
+            return ResponseEntity.noContent()
+                .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id))
+                .build();
+        } else {
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
     }
 
-    /**
-     * {@code SEARCH  /fact-renewable-potentials/_search?query=:query} : search for the factRenewablePotential corresponding
-     * to the query.
-     *
-     * @param query the query of the factRenewablePotential search.
-     * @return the result of the search.
-     */
     @GetMapping("/_search")
     public List<FactRenewablePotential> searchFactRenewablePotentials(@RequestParam("query") String query) {
         LOG.debug("REST request to search FactRenewablePotentials for query {}", query);

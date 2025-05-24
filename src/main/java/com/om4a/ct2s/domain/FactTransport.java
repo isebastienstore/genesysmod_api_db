@@ -30,10 +30,12 @@ public class FactTransport implements Serializable {
     @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Keyword)
     private ModalType typeOfMobility;
 
+    @NotNull
     @DBRef
     @Field("year")
     private Year year;
 
+    @NotNull
     @DBRef
     @Field("country")
     private Country country;

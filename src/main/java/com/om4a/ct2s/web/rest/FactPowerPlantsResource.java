@@ -1,8 +1,11 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactPowerPlants;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactPowerPlantsRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactPowerPlantsSearchRepository;
+import com.om4a.ct2s.service.MetadataService;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
 import jakarta.validation.Valid;
@@ -39,12 +42,20 @@ public class FactPowerPlantsResource {
 
     private final FactPowerPlantsSearchRepository factPowerPlantsSearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
+    private final MetadataService metadataService;
+
     public FactPowerPlantsResource(
         FactPowerPlantsRepository factPowerPlantsRepository,
-        FactPowerPlantsSearchRepository factPowerPlantsSearchRepository
+        FactPowerPlantsSearchRepository factPowerPlantsSearchRepository,
+        MetadataRepository metadataRepository,
+        MetadataService metadataService
     ) {
         this.factPowerPlantsRepository = factPowerPlantsRepository;
         this.factPowerPlantsSearchRepository = factPowerPlantsSearchRepository;
+        this.metadataRepository = metadataRepository;
+        this.metadataService = metadataService;
     }
 
     /**
@@ -54,13 +65,19 @@ public class FactPowerPlantsResource {
      * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factPowerPlants, or with status {@code 400 (Bad Request)} if the factPowerPlants has already an ID.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PostMapping("")
-    public ResponseEntity<FactPowerPlants> createFactPowerPlants(@Valid @RequestBody FactPowerPlants factPowerPlants)
-        throws URISyntaxException {
+    @PostMapping("/{source}")
+    public ResponseEntity<FactPowerPlants> createFactPowerPlants(
+        @Valid @RequestBody FactPowerPlants factPowerPlants,
+        @NotNull @PathVariable("source") String source
+    ) throws URISyntaxException {
         LOG.debug("REST request to save FactPowerPlants : {}", factPowerPlants);
         if (factPowerPlants.getId() != null) {
             throw new BadRequestAlertException("A new factPowerPlants cannot already have an ID", ENTITY_NAME, "idexists");
         }
+
+        //Ajout des metadonnees: qui a cree, quand et quelle est la source de donnee
+        factPowerPlants.metadata(metadataService.generateCreationMetadata(source));
+
         factPowerPlants = factPowerPlantsRepository.save(factPowerPlants);
         factPowerPlantsSearchRepository.index(factPowerPlants);
         return ResponseEntity.created(new URI("/api/fact-power-plants/" + factPowerPlants.getId()))
@@ -95,6 +112,9 @@ public class FactPowerPlantsResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        //Mise a jour des metadonnees: qui a modifie et quand
+        metadataService.updateMetadata(factPowerPlants.getMetadata());
+
         factPowerPlants = factPowerPlantsRepository.save(factPowerPlants);
         factPowerPlantsSearchRepository.index(factPowerPlants);
         return ResponseEntity.ok()
@@ -119,6 +139,7 @@ public class FactPowerPlantsResource {
         @NotNull @RequestBody FactPowerPlants factPowerPlants
     ) throws URISyntaxException {
         LOG.debug("REST request to partial update FactPowerPlants partially : {}, {}", id, factPowerPlants);
+
         if (factPowerPlants.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -145,6 +166,10 @@ public class FactPowerPlantsResource {
                 if (factPowerPlants.getStatus() != null) {
                     existingFactPowerPlants.setStatus(factPowerPlants.getStatus());
                 }
+                if (factPowerPlants.getMetadata() != null) {
+                    //Met à jour les métadonnées via le service comme dans update
+                    metadataService.updateMetadata(existingFactPowerPlants.getMetadata());
+                }
 
                 return existingFactPowerPlants;
             })
@@ -168,7 +193,11 @@ public class FactPowerPlantsResource {
     @GetMapping("")
     public List<FactPowerPlants> getAllFactPowerPlants() {
         LOG.debug("REST request to get all FactPowerPlants");
-        return factPowerPlantsRepository.findAll();
+        List<FactPowerPlants> result = factPowerPlantsRepository.findAll();
+        for (FactPowerPlants fact : result) {
+            metadataService.updateLastInfosMetadata(fact.getMetadata());
+        }
+        return result;
     }
 
     /**
@@ -178,10 +207,14 @@ public class FactPowerPlantsResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the factPowerPlants, or with status {@code 404 (Not Found)}.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<FactPowerPlants> getFactPowerPlants(@PathVariable("id") String id) {
+    public ResponseEntity<FactPowerPlants> getFactPowerPlants(@PathVariable String id) {
         LOG.debug("REST request to get FactPowerPlants : {}", id);
-        Optional<FactPowerPlants> factPowerPlants = factPowerPlantsRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(factPowerPlants);
+        Optional<FactPowerPlants> fppOpt = factPowerPlantsRepository.findById(id);
+        if (fppOpt.isPresent()) {
+            Metadata metadata = fppOpt.get().getMetadata();
+            metadataService.updateLastInfosMetadata(metadata);
+        }
+        return ResponseUtil.wrapOrNotFound(fppOpt);
     }
 
     /**
@@ -193,9 +226,27 @@ public class FactPowerPlantsResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFactPowerPlants(@PathVariable("id") String id) {
         LOG.debug("REST request to delete FactPowerPlants : {}", id);
-        factPowerPlantsRepository.deleteById(id);
-        factPowerPlantsSearchRepository.deleteFromIndexById(id);
-        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id)).build();
+
+        Optional<FactPowerPlants> optionalFact = factPowerPlantsRepository.findById(id);
+
+        if (optionalFact.isPresent()) {
+            FactPowerPlants fact = optionalFact.get();
+
+            //Vérification de la présence des métadonnées avant suppression
+            if (fact.getMetadata() != null && fact.getMetadata().getId() != null) {
+                metadataService.deleteMetadataById(fact.getMetadata().getId());
+            }
+
+            factPowerPlantsRepository.deleteById(id);
+            factPowerPlantsSearchRepository.deleteFromIndexById(id);
+
+            return ResponseEntity.noContent()
+                .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id))
+                .build();
+        } else {
+            // Si l'entité n'est pas trouvée, on peut retourner un 404
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
     }
 
     /**

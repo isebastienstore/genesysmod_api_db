@@ -34,22 +34,27 @@ public class FactPowerPlants implements Serializable {
     @Field("availability_capacity")
     private Double availabilityCapacity;
 
+    @NotNull
     @Field("status")
     @org.springframework.data.elasticsearch.annotations.Field(type = org.springframework.data.elasticsearch.annotations.FieldType.Keyword)
     private StatusType status;
 
+    @NotNull
     @DBRef
     @Field("commissioningDate")
     private Year commissioningDate;
 
+    @NotNull
     @DBRef
     @Field("decommissioningDate")
     private Year decommissioningDate;
 
+    @NotNull
     @DBRef
     @Field("country")
     private Country country;
 
+    @NotNull
     @DBRef
     @Field("technology")
     private Technology technology;

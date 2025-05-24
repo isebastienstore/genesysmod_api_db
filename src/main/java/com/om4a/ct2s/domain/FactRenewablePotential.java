@@ -32,14 +32,17 @@ public class FactRenewablePotential implements Serializable {
     @Field("min_capacity")
     private Double minCapacity;
 
+    @NotNull
     @DBRef
     @Field("country")
     private Country country;
 
+    @NotNull
     @DBRef
     @Field("year")
     private Year year;
 
+    @NotNull
     @DBRef
     @Field("technology")
     private Technology technology;

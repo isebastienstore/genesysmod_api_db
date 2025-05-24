@@ -1,8 +1,11 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactTransport;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactTransportRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactTransportSearchRepository;
+import com.om4a.ct2s.service.MetadataService;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
 import jakarta.validation.Valid;
@@ -39,12 +42,20 @@ public class FactTransportResource {
 
     private final FactTransportSearchRepository factTransportSearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
+    private final MetadataService metadataService;
+
     public FactTransportResource(
         FactTransportRepository factTransportRepository,
-        FactTransportSearchRepository factTransportSearchRepository
+        FactTransportSearchRepository factTransportSearchRepository,
+        MetadataRepository metadataRepository,
+        MetadataService metadataService
     ) {
         this.factTransportRepository = factTransportRepository;
         this.factTransportSearchRepository = factTransportSearchRepository;
+        this.metadataRepository = metadataRepository;
+        this.metadataService = metadataService;
     }
 
     /**
@@ -54,12 +65,19 @@ public class FactTransportResource {
      * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factTransport, or with status {@code 400 (Bad Request)} if the factTransport has already an ID.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PostMapping("")
-    public ResponseEntity<FactTransport> createFactTransport(@Valid @RequestBody FactTransport factTransport) throws URISyntaxException {
+    @PostMapping("/{source}")
+    public ResponseEntity<FactTransport> createFactTransport(
+        @Valid @RequestBody FactTransport factTransport,
+        @NotNull @PathVariable("source") String source
+    ) throws URISyntaxException {
         LOG.debug("REST request to save FactTransport : {}", factTransport);
         if (factTransport.getId() != null) {
             throw new BadRequestAlertException("A new factTransport cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        
+        //Ajout des metadonnees: qui a cree, quand et quelle est la source de donnee
+        factTransport.metadata(metadataService.generateCreationMetadata(source));
+
         factTransport = factTransportRepository.save(factTransport);
         factTransportSearchRepository.index(factTransport);
         return ResponseEntity.created(new URI("/api/fact-transports/" + factTransport.getId()))
@@ -94,6 +112,9 @@ public class FactTransportResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        //Mise a jour des metadonnees: qui a modifie et quand
+        metadataService.updateMetadata(factTransport.getMetadata());
+
         factTransport = factTransportRepository.save(factTransport);
         factTransportSearchRepository.index(factTransport);
         return ResponseEntity.ok()
@@ -118,6 +139,7 @@ public class FactTransportResource {
         @NotNull @RequestBody FactTransport factTransport
     ) throws URISyntaxException {
         LOG.debug("REST request to partial update FactTransport partially : {}, {}", id, factTransport);
+
         if (factTransport.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -137,6 +159,10 @@ public class FactTransportResource {
                 }
                 if (factTransport.getTypeOfMobility() != null) {
                     existingFactTransport.setTypeOfMobility(factTransport.getTypeOfMobility());
+                }
+                if (factTransport.getMetadata() != null) {
+                    //Met à jour les métadonnées via le service comme dans update
+                    metadataService.updateMetadata(existingFactTransport.getMetadata());
                 }
 
                 return existingFactTransport;
@@ -161,7 +187,11 @@ public class FactTransportResource {
     @GetMapping("")
     public List<FactTransport> getAllFactTransports() {
         LOG.debug("REST request to get all FactTransports");
-        return factTransportRepository.findAll();
+        List<FactTransport> result = factTransportRepository.findAll();
+        for (FactTransport fact : result) {
+            metadataService.updateLastInfosMetadata(fact.getMetadata());
+        }
+        return result;
     }
 
     /**
@@ -171,10 +201,14 @@ public class FactTransportResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the factTransport, or with status {@code 404 (Not Found)}.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<FactTransport> getFactTransport(@PathVariable("id") String id) {
+    public ResponseEntity<FactTransport> getFactTransport(@PathVariable String id) {
         LOG.debug("REST request to get FactTransport : {}", id);
-        Optional<FactTransport> factTransport = factTransportRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(factTransport);
+        Optional<FactTransport> ftOpt = factTransportRepository.findById(id);
+        if (ftOpt.isPresent()) {
+            Metadata metadata = ftOpt.get().getMetadata();
+            metadataService.updateLastInfosMetadata(metadata);
+        }
+        return ResponseUtil.wrapOrNotFound(ftOpt);
     }
 
     /**
@@ -186,9 +220,26 @@ public class FactTransportResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFactTransport(@PathVariable("id") String id) {
         LOG.debug("REST request to delete FactTransport : {}", id);
-        factTransportRepository.deleteById(id);
-        factTransportSearchRepository.deleteFromIndexById(id);
-        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id)).build();
+
+        Optional<FactTransport> optionalFact = factTransportRepository.findById(id);
+
+        if (optionalFact.isPresent()) {
+            FactTransport fact = optionalFact.get();
+
+            //Vérification de la présence des métadonnées avant suppression
+            if (fact.getMetadata() != null && fact.getMetadata().getId() != null) {
+                metadataService.deleteMetadataById(fact.getMetadata().getId());
+            }
+
+            factTransportRepository.deleteById(id);
+            factTransportSearchRepository.deleteFromIndexById(id);
+
+            return ResponseEntity.noContent()
+                .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id))
+                .build();
+        } else {
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
     }
 
     /**

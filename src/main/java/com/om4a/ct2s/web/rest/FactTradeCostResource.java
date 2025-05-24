@@ -1,8 +1,11 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactTradeCost;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactTradeCostRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactTradeCostSearchRepository;
+import com.om4a.ct2s.service.MetadataService;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
 import jakarta.validation.Valid;
@@ -39,12 +42,20 @@ public class FactTradeCostResource {
 
     private final FactTradeCostSearchRepository factTradeCostSearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
+    private final MetadataService metadataService;
+
     public FactTradeCostResource(
         FactTradeCostRepository factTradeCostRepository,
-        FactTradeCostSearchRepository factTradeCostSearchRepository
+        FactTradeCostSearchRepository factTradeCostSearchRepository,
+        MetadataRepository metadataRepository,
+        MetadataService metadataService
     ) {
         this.factTradeCostRepository = factTradeCostRepository;
         this.factTradeCostSearchRepository = factTradeCostSearchRepository;
+        this.metadataRepository = metadataRepository;
+        this.metadataService = metadataService;
     }
 
     /**
@@ -54,12 +65,19 @@ public class FactTradeCostResource {
      * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factTradeCost, or with status {@code 400 (Bad Request)} if the factTradeCost has already an ID.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PostMapping("")
-    public ResponseEntity<FactTradeCost> createFactTradeCost(@Valid @RequestBody FactTradeCost factTradeCost) throws URISyntaxException {
+    @PostMapping("/{source}")
+    public ResponseEntity<FactTradeCost> createFactTradeCost(
+        @Valid @RequestBody FactTradeCost factTradeCost,
+        @NotNull @PathVariable("source") String source
+    ) throws URISyntaxException {
         LOG.debug("REST request to save FactTradeCost : {}", factTradeCost);
         if (factTradeCost.getId() != null) {
             throw new BadRequestAlertException("A new factTradeCost cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        
+        //Ajout des metadonnees: qui a cree, quand et quelle est la source de donnee
+        factTradeCost.metadata(metadataService.generateCreationMetadata(source));
+
         factTradeCost = factTradeCostRepository.save(factTradeCost);
         factTradeCostSearchRepository.index(factTradeCost);
         return ResponseEntity.created(new URI("/api/fact-trade-costs/" + factTradeCost.getId()))
@@ -94,6 +112,9 @@ public class FactTradeCostResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        //Mise a jour des metadonnees: qui a modifie et quand
+        metadataService.updateMetadata(factTradeCost.getMetadata());
+
         factTradeCost = factTradeCostRepository.save(factTradeCost);
         factTradeCostSearchRepository.index(factTradeCost);
         return ResponseEntity.ok()
@@ -118,6 +139,7 @@ public class FactTradeCostResource {
         @NotNull @RequestBody FactTradeCost factTradeCost
     ) throws URISyntaxException {
         LOG.debug("REST request to partial update FactTradeCost partially : {}, {}", id, factTradeCost);
+
         if (factTradeCost.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -137,6 +159,10 @@ public class FactTradeCostResource {
                 }
                 if (factTradeCost.getVariableCost() != null) {
                     existingFactTradeCost.setVariableCost(factTradeCost.getVariableCost());
+                }
+                if (factTradeCost.getMetadata() != null) {
+                    //Met à jour les métadonnées via le service comme dans update
+                    metadataService.updateMetadata(existingFactTradeCost.getMetadata());
                 }
 
                 return existingFactTradeCost;
@@ -161,7 +187,11 @@ public class FactTradeCostResource {
     @GetMapping("")
     public List<FactTradeCost> getAllFactTradeCosts() {
         LOG.debug("REST request to get all FactTradeCosts");
-        return factTradeCostRepository.findAll();
+        List<FactTradeCost> result = factTradeCostRepository.findAll();
+        for (FactTradeCost fact : result) {
+            metadataService.updateLastInfosMetadata(fact.getMetadata());
+        }
+        return result;
     }
 
     /**
@@ -171,10 +201,14 @@ public class FactTradeCostResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the factTradeCost, or with status {@code 404 (Not Found)}.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<FactTradeCost> getFactTradeCost(@PathVariable("id") String id) {
+    public ResponseEntity<FactTradeCost> getFactTradeCost(@PathVariable String id) {
         LOG.debug("REST request to get FactTradeCost : {}", id);
-        Optional<FactTradeCost> factTradeCost = factTradeCostRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(factTradeCost);
+        Optional<FactTradeCost> ftcOpt = factTradeCostRepository.findById(id);
+        if (ftcOpt.isPresent()) {
+            Metadata metadata = ftcOpt.get().getMetadata();
+            metadataService.updateLastInfosMetadata(metadata);
+        }
+        return ResponseUtil.wrapOrNotFound(ftcOpt);
     }
 
     /**
@@ -186,9 +220,26 @@ public class FactTradeCostResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFactTradeCost(@PathVariable("id") String id) {
         LOG.debug("REST request to delete FactTradeCost : {}", id);
-        factTradeCostRepository.deleteById(id);
-        factTradeCostSearchRepository.deleteFromIndexById(id);
-        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id)).build();
+
+        Optional<FactTradeCost> optionalFact = factTradeCostRepository.findById(id);
+
+        if (optionalFact.isPresent()) {
+            FactTradeCost fact = optionalFact.get();
+
+            //Vérification de la présence des métadonnées avant suppression
+            if (fact.getMetadata() != null && fact.getMetadata().getId() != null) {
+                metadataService.deleteMetadataById(fact.getMetadata().getId());
+            }
+
+            factTradeCostRepository.deleteById(id);
+            factTradeCostSearchRepository.deleteFromIndexById(id);
+
+            return ResponseEntity.noContent()
+                .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id))
+                .build();
+        } else {
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
     }
 
     /**

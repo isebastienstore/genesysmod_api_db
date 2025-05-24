@@ -1,8 +1,11 @@
 package com.om4a.ct2s.web.rest;
 
 import com.om4a.ct2s.domain.FactPowerProduction;
+import com.om4a.ct2s.domain.Metadata;
 import com.om4a.ct2s.repository.FactPowerProductionRepository;
+import com.om4a.ct2s.repository.MetadataRepository;
 import com.om4a.ct2s.repository.search.FactPowerProductionSearchRepository;
+import com.om4a.ct2s.service.MetadataService;
 import com.om4a.ct2s.web.rest.errors.BadRequestAlertException;
 import com.om4a.ct2s.web.rest.errors.ElasticsearchExceptionMapper;
 import jakarta.validation.Valid;
@@ -39,12 +42,20 @@ public class FactPowerProductionResource {
 
     private final FactPowerProductionSearchRepository factPowerProductionSearchRepository;
 
+    private final MetadataRepository metadataRepository;
+
+    private final MetadataService metadataService;
+
     public FactPowerProductionResource(
         FactPowerProductionRepository factPowerProductionRepository,
-        FactPowerProductionSearchRepository factPowerProductionSearchRepository
+        FactPowerProductionSearchRepository factPowerProductionSearchRepository,
+        MetadataRepository metadataRepository,
+        MetadataService metadataService
     ) {
         this.factPowerProductionRepository = factPowerProductionRepository;
         this.factPowerProductionSearchRepository = factPowerProductionSearchRepository;
+        this.metadataRepository = metadataRepository;
+        this.metadataService = metadataService;
     }
 
     /**
@@ -54,13 +65,19 @@ public class FactPowerProductionResource {
      * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new factPowerProduction, or with status {@code 400 (Bad Request)} if the factPowerProduction has already an ID.
      * @throws URISyntaxException if the Location URI syntax is incorrect.
      */
-    @PostMapping("")
-    public ResponseEntity<FactPowerProduction> createFactPowerProduction(@Valid @RequestBody FactPowerProduction factPowerProduction)
-        throws URISyntaxException {
+    @PostMapping("/{source}")
+    public ResponseEntity<FactPowerProduction> createFactPowerProduction(
+        @Valid @RequestBody FactPowerProduction factPowerProduction,
+        @NotNull @PathVariable("source") String source
+    ) throws URISyntaxException {
         LOG.debug("REST request to save FactPowerProduction : {}", factPowerProduction);
         if (factPowerProduction.getId() != null) {
             throw new BadRequestAlertException("A new factPowerProduction cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        
+        //Ajout des metadonnees: qui a cree, quand et quelle est la source de donnee
+        factPowerProduction.metadata(metadataService.generateCreationMetadata(source));
+
         factPowerProduction = factPowerProductionRepository.save(factPowerProduction);
         factPowerProductionSearchRepository.index(factPowerProduction);
         return ResponseEntity.created(new URI("/api/fact-power-productions/" + factPowerProduction.getId()))
@@ -95,6 +112,9 @@ public class FactPowerProductionResource {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
+        //Mise a jour des metadonnees: qui a modifie et quand
+        metadataService.updateMetadata(factPowerProduction.getMetadata());
+
         factPowerProduction = factPowerProductionRepository.save(factPowerProduction);
         factPowerProductionSearchRepository.index(factPowerProduction);
         return ResponseEntity.ok()
@@ -119,6 +139,7 @@ public class FactPowerProductionResource {
         @NotNull @RequestBody FactPowerProduction factPowerProduction
     ) throws URISyntaxException {
         LOG.debug("REST request to partial update FactPowerProduction partially : {}, {}", id, factPowerProduction);
+
         if (factPowerProduction.getId() == null) {
             throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
         }
@@ -135,6 +156,11 @@ public class FactPowerProductionResource {
             .map(existingFactPowerProduction -> {
                 if (factPowerProduction.getValue() != null) {
                     existingFactPowerProduction.setValue(factPowerProduction.getValue());
+                }
+
+                if (factPowerProduction.getMetadata() != null) {
+                    //Met à jour les métadonnées via le service comme dans update
+                    metadataService.updateMetadata(existingFactPowerProduction.getMetadata());
                 }
 
                 return existingFactPowerProduction;
@@ -159,7 +185,11 @@ public class FactPowerProductionResource {
     @GetMapping("")
     public List<FactPowerProduction> getAllFactPowerProductions() {
         LOG.debug("REST request to get all FactPowerProductions");
-        return factPowerProductionRepository.findAll();
+        List<FactPowerProduction> result = factPowerProductionRepository.findAll();
+        for (FactPowerProduction fact : result) {
+            metadataService.updateLastInfosMetadata(fact.getMetadata());
+        }
+        return result;
     }
 
     /**
@@ -169,10 +199,14 @@ public class FactPowerProductionResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the factPowerProduction, or with status {@code 404 (Not Found)}.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<FactPowerProduction> getFactPowerProduction(@PathVariable("id") String id) {
+    public ResponseEntity<FactPowerProduction> getFactPowerProduction(@PathVariable String id) {
         LOG.debug("REST request to get FactPowerProduction : {}", id);
-        Optional<FactPowerProduction> factPowerProduction = factPowerProductionRepository.findById(id);
-        return ResponseUtil.wrapOrNotFound(factPowerProduction);
+        Optional<FactPowerProduction> fppOpt = factPowerProductionRepository.findById(id);
+        if (fppOpt.isPresent()) {
+            Metadata metadata = fppOpt.get().getMetadata();
+            metadataService.updateLastInfosMetadata(metadata);
+        }
+        return ResponseUtil.wrapOrNotFound(fppOpt);
     }
 
     /**
@@ -184,9 +218,27 @@ public class FactPowerProductionResource {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFactPowerProduction(@PathVariable("id") String id) {
         LOG.debug("REST request to delete FactPowerProduction : {}", id);
-        factPowerProductionRepository.deleteById(id);
-        factPowerProductionSearchRepository.deleteFromIndexById(id);
-        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id)).build();
+
+        Optional<FactPowerProduction> optionalFact = factPowerProductionRepository.findById(id);
+
+        if (optionalFact.isPresent()) {
+            FactPowerProduction fact = optionalFact.get();
+
+            //Vérification de la présence des métadonnées avant suppression
+            if (fact.getMetadata() != null && fact.getMetadata().getId() != null) {
+                metadataService.deleteMetadataById(fact.getMetadata().getId());
+            }
+
+            factPowerProductionRepository.deleteById(id);
+            factPowerProductionSearchRepository.deleteFromIndexById(id);
+
+            return ResponseEntity.noContent()
+                .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id))
+                .build();
+        } else {
+            // Si l'entité n'est pas trouvée, on peut retourner un 404
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
     }
 
     /**

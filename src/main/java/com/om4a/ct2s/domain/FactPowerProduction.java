@@ -24,18 +24,22 @@ public class FactPowerProduction implements Serializable {
     @Field("value")
     private Double value;
 
+    @NotNull
     @DBRef
     @Field("year")
     private Year year;
 
+    @NotNull
     @DBRef
     @Field("country")
     private Country country;
 
+    @NotNull
     @DBRef
     @Field("technology")
     private Technology technology;
 
+    @NotNull
     @DBRef
     @Field("fuel")
     private Fuel fuel;
